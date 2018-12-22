@@ -1,5 +1,7 @@
 package key;
 
+import java.util.Objects;
+
 public class StringKey {
     private final String key;
 
@@ -15,5 +17,9 @@ public class StringKey {
     @Override
     public int hashCode() {
         return key.hashCode();
+    }
+
+    public String stringHashCode() {
+        return Objects.toString(hashCode());
     }
 }

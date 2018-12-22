@@ -4,22 +4,28 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.List;
-import java.util.TreeMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-public class Main {
+import static java.lang.System.lineSeparator;
+
+public class HashCodeDistribution {
 
     public static void main(String[] args) throws IOException {
-        int numberOfHashesToCheck = 2;
+        String hashCodesInputFilePath = "W:/hashcodes-iv.csv";
+        String distributionOutputFilePath = "W:/hashcode-distribution.csv";
 
-        List<TreeMap<Long, Integer>> stats = IntStream.range(0, numberOfHashesToCheck)
-                .mapToObj(i -> new TreeMap<Long, Integer>())
+
+        int numberOfHashesToCheck = 4;
+
+        List<ConcurrentSkipListMap<Long, Integer>> stats = IntStream.range(0, numberOfHashesToCheck)
+                .mapToObj(i -> new ConcurrentSkipListMap<Long, Integer>())
                 .collect(Collectors.toList());
 
-        int interval = 1_000_000;
+        int interval = 10_000_000;
 
         final AtomicInteger processed = new AtomicInteger(0);
 
@@ -34,14 +40,14 @@ public class Main {
         });
 
 
-        try (Stream<String> stream = Files.lines(Paths.get("W:/hashcode-iv.txt"))) {
-            stream.forEach(line -> {
+        try (Stream<String> stream = Files.lines(Paths.get(hashCodesInputFilePath))) {
+            stream.skip(1).parallel().forEach(line -> {
                 String[] split = line.split(",");
 
-                for (int i = 1; i < split.length; i++) {
+                for (int i = 0; i < split.length; i++) {
                     int hashCode = Integer.parseInt(split[i]);
                     long intervalStartIndex = getIntervalStartIndex(hashCode, interval);
-                    stats.get(i - 1).compute(intervalStartIndex, (k, v) -> v + 1);
+                    stats.get(i).compute(intervalStartIndex, (k, v) -> v + 1);
 
                 }
 
@@ -53,7 +59,10 @@ public class Main {
 
         System.out.println("Processed total: " + processed.get());
 
-        try (FileWriter fileWriter = new FileWriter("W:/hashcode-distribution.txt")) {
+        try (FileWriter fileWriter = new FileWriter(distributionOutputFilePath)) {
+            fileWriter.write("interval,stringHash,guavaHash,apacheHash,ideaHash");
+            fileWriter.write(lineSeparator());
+
             Iterator<Long> iterator = stats.get(0).keySet().iterator();
             while (iterator.hasNext()) {
                 Long key = iterator.next();
