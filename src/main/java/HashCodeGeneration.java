@@ -2,6 +2,8 @@ import key.ApacheCommonsHashCodeKey;
 import key.JavaObjectsHashCodeKey;
 import key.IdeaDefaultHashCodeKey;
 import key.StringKey;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -13,6 +15,7 @@ import java.util.stream.Stream;
 import static java.lang.System.lineSeparator;
 
 public class HashCodeGeneration {
+    private static Logger LOG = LogManager.getRootLogger();
 
     public static void main(String[] args) throws IOException {
         AtomicInteger processedLineCount = new AtomicInteger(0);
@@ -31,26 +34,30 @@ public class HashCodeGeneration {
                 int id2 = Integer.parseInt(split[1]);
                 long id3 = Long.parseLong(split[2]);
 
+                StringBuilder lineToWrite = new StringBuilder();
+
+                lineToWrite
+                        .append(new StringKey(id1, id2, id3).hashCode())
+                        .append(",")
+                        .append(new JavaObjectsHashCodeKey(id1, id2, id3).hashCode())
+                        .append(",")
+                        .append(new ApacheCommonsHashCodeKey(id1, id2, id3).hashCode())
+                        .append(",")
+                        .append(new IdeaDefaultHashCodeKey(id1, id2, id3).hashCode());
+
                 try {
-                    fileWriter.write(new StringKey(id1, id2, id3).stringHashCode());
-                    fileWriter.write(",");
-                    fileWriter.write(new JavaObjectsHashCodeKey(id1, id2, id3).stringHashCode());
-                    fileWriter.write(",");
-                    fileWriter.write(new ApacheCommonsHashCodeKey(id1, id2, id3).stringHashCode());
-                    fileWriter.write(",");
-                    fileWriter.write(new IdeaDefaultHashCodeKey(id1, id2, id3).stringHashCode());
-                    fileWriter.write(lineSeparator());
+                    fileWriter.append(lineToWrite.toString()).append(lineSeparator());
 
                     if (processedLineCount.incrementAndGet() % 100_000 == 0) {
-                        System.out.println("Processed " + processedLineCount.get());
+                        LOG.info("Processed " + processedLineCount.get());
                     }
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    throw new RuntimeException(e);
                 }
 
             });
 
-            System.out.println("Total Processed " + processedLineCount.get());
+            LOG.info("Total Processed " + processedLineCount.get());
         }
     }
 }
