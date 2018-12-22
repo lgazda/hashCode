@@ -12,7 +12,9 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static java.lang.Integer.parseInt;
 import static java.lang.System.lineSeparator;
+import static org.apache.commons.lang3.ObjectUtils.defaultIfNull;
 
 public class HashCodeDistribution {
 
@@ -68,10 +70,10 @@ public class HashCodeDistribution {
                 }
 
                 for (int i = 0; i < split.length; i++) {
-                    int hashCode = Integer.parseInt(split[i]);
+                    int hashCode = parseInt(split[i]);
                     long intervalStartIndex = getIntervalStartIndex(hashCode, interval);
-                    stats.get(i).compute(intervalStartIndex, (k, v) -> v + 1);
 
+                    stats.get(i).compute(intervalStartIndex, (k, v) -> defaultIfNull(v, 0) + 1);
                 }
 
                 if (processed.incrementAndGet() % 100_000 == 0) {
