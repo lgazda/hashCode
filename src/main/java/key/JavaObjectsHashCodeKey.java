@@ -1,8 +1,10 @@
 package key;
 
-public class GuavaHashCodeKey extends AttributeBasedKey {
+import java.util.Objects;
 
-    public GuavaHashCodeKey(int id1, int id2, long id3) {
+public class JavaObjectsHashCodeKey extends AttributeBasedKey {
+
+    public JavaObjectsHashCodeKey(int id1, int id2, long id3) {
         super(id1, id2, id3);
     }
 
@@ -18,6 +20,6 @@ public class GuavaHashCodeKey extends AttributeBasedKey {
 
     @Override
     public int hashCode() {
-        return com.google.common.base.Objects.hashCode(id1, id2, id3);
+        return Objects.hash(id1, id2, id3);
     }
 }

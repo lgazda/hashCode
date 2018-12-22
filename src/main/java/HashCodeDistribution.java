@@ -29,10 +29,10 @@ public class HashCodeDistribution {
 
         final AtomicInteger processed = new AtomicInteger(0);
 
-        long minValue = -2_200_000_000L;
-        long maxValue = 2_200_000_000L;
+        long minValue = -2_147_000_000L;
+        long maxValue = 2_147_000_000L;
 
-        stats.forEach(map -> {
+        stats.stream().parallel().forEach(map -> {
             map.put(0L, 0);
             for (long i = minValue; i <= maxValue; i += interval) {
                 map.put(getIntervalStartIndex(i, interval), 0);
@@ -60,7 +60,7 @@ public class HashCodeDistribution {
         System.out.println("Processed total: " + processed.get());
 
         try (FileWriter fileWriter = new FileWriter(distributionOutputFilePath)) {
-            fileWriter.write("interval,stringHash,guavaHash,apacheHash,ideaHash");
+            fileWriter.write("interval,stringHash,javaHash,apacheHash,ideaHash");
             fileWriter.write(lineSeparator());
 
             Iterator<Long> iterator = stats.get(0).keySet().iterator();

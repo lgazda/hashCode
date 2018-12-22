@@ -1,5 +1,5 @@
 import key.ApacheCommonsHashCodeKey;
-import key.GuavaHashCodeKey;
+import key.JavaObjectsHashCodeKey;
 import key.IdeaDefaultHashCodeKey;
 import key.StringKey;
 
@@ -7,16 +7,10 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Iterator;
-import java.util.List;
-import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static java.lang.System.lineSeparator;
-import static java.lang.System.setOut;
 
 public class HashCodeGeneration {
 
@@ -26,7 +20,7 @@ public class HashCodeGeneration {
         try (Stream<String> stream = Files.lines(Paths.get("W:/hashcode-iv.txt"));
              FileWriter fileWriter = new FileWriter("W:/hashcodes-iv.txt")) {
 
-            fileWriter.write("stringHash,guavaHash,apacheHash,ideaHash");
+            fileWriter.write("stringHash,javaHash,apacheHash,ideaHash");
             fileWriter.write(lineSeparator());
 
             stream.forEach(line -> {
@@ -40,7 +34,7 @@ public class HashCodeGeneration {
                 try {
                     fileWriter.write(new StringKey(id1, id2, id3).stringHashCode());
                     fileWriter.write(",");
-                    fileWriter.write(new GuavaHashCodeKey(id1, id2, id3).stringHashCode());
+                    fileWriter.write(new JavaObjectsHashCodeKey(id1, id2, id3).stringHashCode());
                     fileWriter.write(",");
                     fileWriter.write(new ApacheCommonsHashCodeKey(id1, id2, id3).stringHashCode());
                     fileWriter.write(",");
