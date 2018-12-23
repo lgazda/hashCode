@@ -1,10 +1,11 @@
 package key;
 
+import java.util.Date;
 import java.util.Objects;
 
 public class JavaObjectsHashCodeKey extends AttributeBasedKey {
 
-    public JavaObjectsHashCodeKey(int id1, int id2, long id3) {
+    public JavaObjectsHashCodeKey(int id1, int id2, Date id3) {
         super(id1, id2, id3);
     }
 

@@ -9,6 +9,11 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.util.Date;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
@@ -18,21 +23,24 @@ public class HashCodeGeneration {
     private static Logger LOG = LogManager.getRootLogger();
 
     public static void main(String[] args) throws IOException {
+        String inputFilePath = "W:/hashcodes/inventory.sh.csv";
+        String outputFilePath = "W:/hashcodes/hashcodes.sh.csv";
+        boolean appendToOutput = false;
+
         AtomicInteger processedLineCount = new AtomicInteger(0);
 
-        try (Stream<String> stream = Files.lines(Paths.get("W:/hashcode-iv.txt"));
-             FileWriter fileWriter = new FileWriter("W:/hashcodes-iv.txt")) {
+        try (Stream<String> stream = Files.lines(Paths.get(inputFilePath));
+             FileWriter fileWriter = new FileWriter(outputFilePath, appendToOutput)) {
 
             fileWriter.write("stringHash,javaHash,apacheHash,ideaHash");
             fileWriter.write(lineSeparator());
 
             stream.forEach(line -> {
-                String[] split1 = line.split(",");
-                String[] split = split1[0].split("_");
+                String[] lineSplit = line.split(",");
 
-                int id1 = Integer.parseInt(split[0]);
-                int id2 = Integer.parseInt(split[1]);
-                long id3 = Long.parseLong(split[2]);
+                int id1 = Integer.parseInt(lineSplit[0]);
+                int id2 = Integer.parseInt(lineSplit[1]);
+                Date id3 = parseDate(lineSplit[2]);
 
                 StringBuilder lineToWrite = new StringBuilder();
 
@@ -58,6 +66,16 @@ public class HashCodeGeneration {
             });
 
             LOG.info("Total Processed " + processedLineCount.get());
+        }
+    }
+
+    private static Date parseDate(String s) {
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+        try {
+            return simpleDateFormat.parse(s);
+        } catch (ParseException e) {
+            throw new IllegalStateException("Unable to parse date from: " + s);
         }
     }
 }

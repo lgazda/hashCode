@@ -21,8 +21,8 @@ public class HashCodeDistribution {
     private static Logger LOG = LogManager.getRootLogger();
 
     public static void main(String[] args) throws IOException {
-        String hashCodesInputFilePath = "W:/hashcodes-iv.csv";
-        String distributionOutputFilePath = "W:/hashcode-distribution.csv";
+        String hashCodesInputFilePath = "W:/hashcodes/hashcodes.ts.csv";
+        String distributionOutputFilePath = "W:/hashcodes/hashcode.distribution.ts.csv";
 
         int numberOfHashesToCheck = 4;
         int hashCodeStatsDistributionInterval = 10_000_000;

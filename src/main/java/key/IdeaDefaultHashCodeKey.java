@@ -1,8 +1,10 @@
 package key;
 
+import java.util.Date;
+
 public class IdeaDefaultHashCodeKey extends AttributeBasedKey {
 
-    public IdeaDefaultHashCodeKey(int id1, int id2, long id3) {
+    public IdeaDefaultHashCodeKey(int id1, int id2, Date id3) {
         super(id1, id2, id3);
     }
 
@@ -15,14 +17,13 @@ public class IdeaDefaultHashCodeKey extends AttributeBasedKey {
 
         if (id1 != that.id1) return false;
         if (id2 != that.id2) return false;
-        return id3 == that.id3;
+        return id3.equals(that.id3);
     }
 
     @Override
     public int hashCode() {
         int result = id1;
         result = 31 * result + id2;
-        result = 31 * result + (int) (id3 ^ (id3 >>> 32));
+        result = 31 * result + id3.hashCode();
         return result;
-    }
-}
+    }}

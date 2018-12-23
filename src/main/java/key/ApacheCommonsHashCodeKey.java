@@ -3,9 +3,11 @@ package key;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
+import java.util.Date;
+
 public class ApacheCommonsHashCodeKey extends AttributeBasedKey {
 
-    public ApacheCommonsHashCodeKey(int id1, int id2, long id3) {
+    public ApacheCommonsHashCodeKey(int id1, int id2, Date id3) {
         super(id1, id2, id3);
     }
 
