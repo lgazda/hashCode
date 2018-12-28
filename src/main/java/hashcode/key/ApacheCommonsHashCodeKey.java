@@ -20,22 +20,22 @@ public class ApacheCommonsHashCodeKey extends KeyData {
         KeyData that = (KeyData) o;
 
         return new EqualsBuilder()
-                .append(id1, that.id1)
-                .append(id2, that.id2)
-                .append(id3, that.id3)
+                .append(getId1(), that.getId1())
+                .append(getId2(), that.getId2())
+                .append(getId3(), that.getId3())
                 .isEquals();
     }
 
     @Override
     public int hashCode() {
         return new HashCodeBuilder(17, 37)
-                .append(id1)
-                .append(id2)
-                .append(id3)
+                .append(getId1())
+                .append(getId2())
+                .append(getId3())
                 .toHashCode();
     }
 
     public static ApacheCommonsHashCodeKey of(KeyData key) {
-        return new ApacheCommonsHashCodeKey(key.id1, key.id2, key.id3);
+        return new ApacheCommonsHashCodeKey(key.getId1(), key.getId2(), key.getId3());
     }
 }

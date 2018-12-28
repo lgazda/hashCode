@@ -15,20 +15,20 @@ public class IdeaDefaultHashCodeKey extends KeyData {
 
         KeyData that = (KeyData) o;
 
-        if (id1 != that.id1) return false;
-        if (id2 != that.id2) return false;
-        return id3.equals(that.id3);
+        if (getId1() != that.getId1()) return false;
+        if (getId2() != that.getId2()) return false;
+        return getId3().equals(that.getId3());
     }
 
     @Override
     public int hashCode() {
-        int result = id1;
-        result = 31 * result + id2;
-        result = 31 * result + id3.hashCode();
+        int result = getId1();
+        result = 31 * result + getId2();
+        result = 31 * result + getId3().hashCode();
         return result;
     }
 
     public static IdeaDefaultHashCodeKey of(KeyData key) {
-        return new IdeaDefaultHashCodeKey(key.id1, key.id2, key.id3);
+        return new IdeaDefaultHashCodeKey(key.getId1(), key.getId2(), key.getId3());
     }
 }

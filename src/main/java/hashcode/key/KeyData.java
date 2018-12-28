@@ -5,9 +5,9 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class KeyData {
-    protected final int id1;
-    protected final int id2;
-    protected final Date id3;
+    private final int id1;
+    private final int id2;
+    private final Date id3;
 
     public KeyData(int id1, int id2, Date id3) {
         this.id1 = id1;

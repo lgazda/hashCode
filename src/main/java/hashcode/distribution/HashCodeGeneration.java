@@ -1,21 +1,16 @@
 package hashcode.distribution;
 
-import hashcode.key.ApacheCommonsHashCodeKey;
-import hashcode.key.JavaObjectsHashCodeKey;
-import hashcode.key.IdeaDefaultHashCodeKey;
-import hashcode.key.StringKey;
+import hashcode.key.FileBasedKeyDataSupplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.Date;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
 
-import static hashcode.key.KeyData.parseDate;
+import static hashcode.distribution.HashCodeDistribution.HASH_FUNCTION_MAP;
 import static java.lang.System.lineSeparator;
 
 public class HashCodeGeneration {
@@ -28,29 +23,22 @@ public class HashCodeGeneration {
 
         AtomicInteger processedLineCount = new AtomicInteger(0);
 
-        try (Stream<String> stream = Files.lines(Paths.get(inputFilePath));
+        try (FileBasedKeyDataSupplier fileBasedKeyDataSupplier = new FileBasedKeyDataSupplier(inputFilePath);
              FileWriter fileWriter = new FileWriter(outputFilePath, appendToOutput)) {
 
-            fileWriter.write("stringHash,javaHash,apacheHash,ideaHash");
+            List<String> hashColumns = new ArrayList<>(HASH_FUNCTION_MAP.keySet());
+            hashColumns.sort(String::compareTo);
+
+            fileWriter.write(String.join(",", hashColumns));
             fileWriter.write(lineSeparator());
 
-            stream.forEach(line -> {
-                String[] lineSplit = line.split(",");
-
-                int id1 = Integer.parseInt(lineSplit[0]);
-                int id2 = Integer.parseInt(lineSplit[1]);
-                Date id3 = parseDate(lineSplit[2]);
-
+            fileBasedKeyDataSupplier.get().forEach(keyData -> {
                 StringBuilder lineToWrite = new StringBuilder();
 
-                lineToWrite
-                        .append(new StringKey(id1, id2, id3).hashCode())
-                        .append(",")
-                        .append(new JavaObjectsHashCodeKey(id1, id2, id3).hashCode())
-                        .append(",")
-                        .append(new ApacheCommonsHashCodeKey(id1, id2, id3).hashCode())
-                        .append(",")
-                        .append(new IdeaDefaultHashCodeKey(id1, id2, id3).hashCode());
+                hashColumns.forEach(hashColumn -> {
+                    Integer hashCode = HASH_FUNCTION_MAP.get(hashColumn).apply(keyData.getValue());
+                    lineToWrite.append(hashCode).append(",");
+                });
 
                 try {
                     fileWriter.append(lineToWrite.toString()).append(lineSeparator());
@@ -61,7 +49,6 @@ public class HashCodeGeneration {
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
-
             });
 
             LOG.info("Total Processed " + processedLineCount.get());

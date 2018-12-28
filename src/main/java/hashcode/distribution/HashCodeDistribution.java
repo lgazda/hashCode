@@ -1,12 +1,13 @@
 package hashcode.distribution;
 
 import com.google.common.collect.ImmutableMap;
-import hashcode.benchmark.HashGenerationBenchmark;
-import hashcode.benchmark.HashGenerationBenchmark.BenchmarkDate.KeyDataSupplier;
 import hashcode.key.ApacheCommonsHashCodeKey;
+import hashcode.key.FileBasedKeyDataSupplier;
+import hashcode.key.GenerateKeyDataSupplier;
 import hashcode.key.IdeaDefaultHashCodeKey;
 import hashcode.key.JavaObjectsHashCodeKey;
 import hashcode.key.KeyData;
+import hashcode.key.KeyDataSupplier;
 import hashcode.key.StringKey;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -16,7 +17,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -39,24 +39,21 @@ public class HashCodeDistribution {
     public static void main(String[] args) throws Exception {
         int hashCodeStatsDistributionInterval = 10_000_000;
 
-        Map<String, ConcurrentSkipListMap<Long, Integer>> stats = createStats(HASH_FUNCTION_MAP.keySet(), hashCodeStatsDistributionInterval);
+        Map<String, ConcurrentSkipListMap<Long, Integer>> stats = createStats(hashCodeStatsDistributionInterval);
 
-        try(KeyDataSupplier dataStream = new HashGenerationBenchmark.BenchmarkDate.FileBasedKeyDataSupplier("W:/hashcodes/inventory.ts.csv")) {
-            collectStats(HASH_FUNCTION_MAP, stats, hashCodeStatsDistributionInterval, dataStream);
+        try(KeyDataSupplier fileSupplier = new FileBasedKeyDataSupplier("W:/hashcodes/inventory.ts.csv");
+            KeyDataSupplier generatedDataSupplier = new GenerateKeyDataSupplier(37_000_000)) {
+            collectStats(stats, hashCodeStatsDistributionInterval, generatedDataSupplier);
         }
 
-/*        try(KeyDataSupplier dataStream = new HashGenerationBenchmark.BenchmarkDate.GeneratedKeyDataSupplier(100_000)) {
-            collectStats(hashFunctionMap, stats, hashCodeStatsDistributionInterval, dataStream);
-        }*/
-
-        String distributionOutputFilePath = "W:/hashcodes/hashcode.distribution.generated.csv";
-        writeStats(distributionOutputFilePath, stats, hashCodeStatsDistributionInterval);
-
+        writeStats("W:/hashcodes/hashcode.distribution.generated.csv",
+                stats,
+                hashCodeStatsDistributionInterval);
     }
 
-    private static Map<String, ConcurrentSkipListMap<Long, Integer>> createStats(Set<String> hashNames, int interval) {
+    private static Map<String, ConcurrentSkipListMap<Long, Integer>> createStats(int interval) {
         LOG.info("Creating stats");
-        Map<String, ConcurrentSkipListMap<Long, Integer>> map = hashNames.stream()
+        Map<String, ConcurrentSkipListMap<Long, Integer>> map = HASH_FUNCTION_MAP.keySet().stream()
                 .collect(Collectors.toMap(Function.identity(), name -> new ConcurrentSkipListMap<>()));
 
         initializeStats(map, interval);
@@ -79,15 +76,16 @@ public class HashCodeDistribution {
         LOG.info("Stats intervals initialized");
     }
 
-    private static void collectStats(Map<String, Function<KeyData, Integer>> hashFunctionMap, Map<String, ConcurrentSkipListMap<Long, Integer>> stats, int distributionInterval, KeyDataSupplier pairStream) {
+    private static void collectStats(Map<String, ConcurrentSkipListMap<Long, Integer>> stats, int distributionInterval, KeyDataSupplier pairStream) {
         final AtomicInteger processed = new AtomicInteger(0);
 
         pairStream.get().forEach(data -> {
-            hashFunctionMap.forEach((hashName, hashFunction) -> {
+            HASH_FUNCTION_MAP.forEach((hashName, hashFunction) -> {
                 ConcurrentSkipListMap<Long, Integer> singleHashStats = stats.get(hashName);
-                singleHashStats.compute(
-                        getIntervalStartIndex(hashFunction.apply(data.getValue()), distributionInterval),
-                        (k, v) -> defaultIfNull(v, 0) + 1);
+                Integer hashCode = hashFunction.apply(data.getValue());
+                long statsBucket = getIntervalStartIndex(hashCode, distributionInterval);
+
+                singleHashStats.compute(statsBucket, (k, v) -> defaultIfNull(v, 0) + 1);
             });
 
             if (processed.incrementAndGet() % 1_000_000 == 0) {
@@ -104,7 +102,7 @@ public class HashCodeDistribution {
 
         try (FileWriter fileWriter = new FileWriter(distributionOutputFilePath)) {
             fileWriter.write("interval,");
-            fileWriter.write(String.join(",", stats.keySet()));
+            fileWriter.write(String.join(",", hashColumns));
             fileWriter.write(lineSeparator());
 
             for (Long currentInterval : stats.get(hashColumns.get(0)).keySet()) {

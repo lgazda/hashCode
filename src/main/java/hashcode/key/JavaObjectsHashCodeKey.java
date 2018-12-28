@@ -14,17 +14,17 @@ public class JavaObjectsHashCodeKey extends KeyData {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         KeyData that = (KeyData) o;
-        return id1 == that.id1 &&
-                id2 == that.id2 &&
-                id3 == that.id3;
+        return getId1() == that.getId1() &&
+                getId2() == that.getId2() &&
+                getId3() == that.getId3();
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id1, id2, id3);
+        return Objects.hash(getId1(), getId2(), getId3());
     }
 
     public static JavaObjectsHashCodeKey of(KeyData key) {
-        return new JavaObjectsHashCodeKey(key.id1, key.id2, key.id3);
+        return new JavaObjectsHashCodeKey(key.getId1(), key.getId2(), key.getId3());
     }
 }
