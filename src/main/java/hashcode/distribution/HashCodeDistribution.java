@@ -15,6 +15,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -39,10 +40,10 @@ public class HashCodeDistribution {
     public static void main(String[] args) throws Exception {
         int hashCodeStatsDistributionInterval = 10_000_000;
 
-        Map<String, ConcurrentSkipListMap<Long, Integer>> stats = createStats(hashCodeStatsDistributionInterval);
+        Stats stats = new Stats(hashCodeStatsDistributionInterval);
 
         try(KeyDataSupplier fileSupplier = new FileBasedKeyDataSupplier("W:/hashcodes/inventory.ts.csv");
-            KeyDataSupplier generatedDataSupplier = new GenerateKeyDataSupplier(37_000_000)) {
+            KeyDataSupplier generatedDataSupplier = new GenerateKeyDataSupplier(1_000_000)) {
             collectStats(stats, hashCodeStatsDistributionInterval, generatedDataSupplier);
         }
 
@@ -51,15 +52,48 @@ public class HashCodeDistribution {
                 hashCodeStatsDistributionInterval);
     }
 
-    private static Map<String, ConcurrentSkipListMap<Long, Integer>> createStats(int interval) {
-        LOG.info("Creating stats");
-        Map<String, ConcurrentSkipListMap<Long, Integer>> map = HASH_FUNCTION_MAP.keySet().stream()
-                .collect(Collectors.toMap(Function.identity(), name -> new ConcurrentSkipListMap<>()));
+    public static class Stats {
+        private final Map<String, ConcurrentSkipListMap<Long, Integer>> stats;
+        private final int hashCodeStatsDistributionInterval;
 
-        initializeStats(map, interval);
+        public Stats(int hashCodeStatsDistributionInterval) {
+            this.hashCodeStatsDistributionInterval = hashCodeStatsDistributionInterval;
+            stats = createStats(this.hashCodeStatsDistributionInterval);
+        }
 
-        return map;
+        private static Map<String, ConcurrentSkipListMap<Long, Integer>> createStats(int interval) {
+            LOG.info("Creating stats");
+            Map<String, ConcurrentSkipListMap<Long, Integer>> map = HASH_FUNCTION_MAP.keySet().stream()
+                    .collect(Collectors.toMap(Function.identity(), name -> new ConcurrentSkipListMap<>()));
+
+            initializeStats(map, interval);
+
+            return map;
+        }
+
+        public void collectHashCodeStat(String hashName, int hashCode) {
+            long statsBucket = getIntervalStartIndex(hashCode, hashCodeStatsDistributionInterval);
+            stats.get(hashName).compute(statsBucket, (k, v) -> defaultIfNull(v, 0) + 1);
+        }
+
+        public List<String> getHashNames() {
+            List<String> hashColumns = new ArrayList<>(stats.keySet());
+            hashColumns.sort(String::compareTo);
+
+            return hashColumns;
+        }
+
+        public Collection<Long> getStatIntervals() {
+            return stats.values().stream().findFirst().map(ConcurrentSkipListMap::keySet).orElse(null);
+        }
+
+        public int getStats(String hashName, Long currentInterval) {
+            ConcurrentSkipListMap<Long, Integer> stat = stats.get(hashName);
+            return stat.get(currentInterval);
+        }
     }
+
+
 
     private static void initializeStats(Map<String, ConcurrentSkipListMap<Long, Integer>> stats, int interval) {
         long minValue = -2_147_000_000L;
@@ -76,16 +110,13 @@ public class HashCodeDistribution {
         LOG.info("Stats intervals initialized");
     }
 
-    private static void collectStats(Map<String, ConcurrentSkipListMap<Long, Integer>> stats, int distributionInterval, KeyDataSupplier pairStream) {
+    private static void collectStats(Stats stats, int distributionInterval, KeyDataSupplier pairStream) {
         final AtomicInteger processed = new AtomicInteger(0);
 
         pairStream.get().forEach(data -> {
             HASH_FUNCTION_MAP.forEach((hashName, hashFunction) -> {
-                ConcurrentSkipListMap<Long, Integer> singleHashStats = stats.get(hashName);
                 Integer hashCode = hashFunction.apply(data.getValue());
-                long statsBucket = getIntervalStartIndex(hashCode, distributionInterval);
-
-                singleHashStats.compute(statsBucket, (k, v) -> defaultIfNull(v, 0) + 1);
+                stats.collectHashCodeStat(hashName, hashCode);
             });
 
             if (processed.incrementAndGet() % 1_000_000 == 0) {
@@ -96,26 +127,22 @@ public class HashCodeDistribution {
         LOG.info("Processed total: " + processed.get());
     }
 
-    private static void writeStats(String distributionOutputFilePath, Map<String, ConcurrentSkipListMap<Long, Integer>> stats, int distributionInterval) throws IOException {
-        List<String> hashColumns = new ArrayList<>(stats.keySet());
-        hashColumns.sort(String::compareTo);
+    private static void writeStats(String distributionOutputFilePath, Stats stats, int distributionInterval) throws IOException {
 
         try (FileWriter fileWriter = new FileWriter(distributionOutputFilePath)) {
             fileWriter.write("interval,");
-            fileWriter.write(String.join(",", hashColumns));
+            fileWriter.write(String.join(",", stats.getHashNames()));
             fileWriter.write(lineSeparator());
 
-            for (Long currentInterval : stats.get(hashColumns.get(0)).keySet()) {
+            for (Long currentInterval : stats.getStatIntervals()) {
                 long start = currentInterval * distributionInterval;
                 long end = start + distributionInterval - 1;
 
                 StringBuilder line = new StringBuilder().append("[").append(start).append("_").append(end).append("]");
 
-                for (String hashName : hashColumns) {
-                    ConcurrentSkipListMap<Long, Integer> stat = stats.get(hashName);
-                    Integer statValue = stat.get(currentInterval);
-
-                    line.append(',').append(statValue);
+                for (String hashName : stats.getHashNames()) {
+                    Integer intervalStats = stats.getStats(hashName, currentInterval);
+                    line.append(',').append(intervalStats);
                 }
 
                 fileWriter.append(line.toString()).append(lineSeparator());

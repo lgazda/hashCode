@@ -37,7 +37,7 @@ public class RealDataHashCodeBenchmark {
 
         //@Setup(Level.Trial)
         public void loadKeys() {
-            LOG.info("Populating key data");
+            LOG.info("Populating key keyDataList");
 
             String inputIV = "W:/hashcodes/inventory.iv.csv";
             String inputSH = "W:/hashcodes/inventory.sh.csv";

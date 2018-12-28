@@ -31,29 +31,29 @@ public class HashGenerationBenchmark {
     public static class BenchmarkDate {
         private static final int ENTRY_COUNT = 37_000_000;
 
-        List<KeyData> data = new ArrayList<>(ENTRY_COUNT);
-        Map<Object, Integer> elementMap = new ConcurrentHashMap<>(ENTRY_COUNT);
+        List<KeyData> keyDataList = new ArrayList<>(ENTRY_COUNT);
+        Map<Object, Integer> keyElementMap = new ConcurrentHashMap<>(ENTRY_COUNT);
 
-        Iterator<KeyData> dataIterator;
+        private Iterator<KeyData> dataIterator;
 
         @Setup(Level.Trial)
         public void generateData() {
             new GenerateKeyDataSupplier(ENTRY_COUNT)
                 .get()
                 .forEach(keyData -> {
-                    data.add(keyData.getKey(), keyData.getValue());
-
-                    //elementMap.put(ApacheCommonsHashCodeKey.of(keyData), i);
-                    elementMap.put(StringKey.stringKey(keyData.getValue()), keyData.getKey());
+                    keyDataList.add(keyData.getKey(), keyData.getValue());
+                    //keyElementMap.put(ApacheCommonsHashCodeKey.of(keyData.getValue()), keyData.getKey());
+                    //keyElementMap.put(JavaObjectsHashCodeKey.of(keyData.getValue()), keyData.getKey());
+                    keyElementMap.put(StringKey.stringKey(keyData.getValue()), keyData.getKey());
                 });
         }
 
         @Setup(Level.Iteration)
         public void resetDataIterator() {
-            dataIterator = data.iterator();
+            dataIterator = keyDataList.iterator();
         }
 
-        KeyData nextDataElement() {
+        public KeyData nextDataElement() {
             if (!dataIterator.hasNext()) {
                 resetDataIterator();
             }
@@ -66,7 +66,7 @@ public class HashGenerationBenchmark {
     @Warmup(iterations = 5, time = 5)
     @BenchmarkMode(Mode.Throughput) @OutputTimeUnit(TimeUnit.SECONDS)
     @Measurement(iterations = 5)
-    //@Benchmark
+    @Benchmark
     public void stringHashGeneration(BenchmarkDate data, Blackhole blackhole) {
         KeyData keyData = data.nextDataElement();
         String key = StringKey.stringKey(keyData);
@@ -84,8 +84,11 @@ public class HashGenerationBenchmark {
         KeyData keyData = data.nextDataElement();
         String key = StringKey.stringKey(keyData);
 
-        blackhole.consume(data.elementMap.get(key));
+        blackhole.consume(data.keyElementMap.get(key));
     }
+
+
+
 
     @Fork(value = 1)
     @Warmup(iterations = 5, time = 5)
@@ -122,7 +125,7 @@ public class HashGenerationBenchmark {
         KeyData keyData = data.nextDataElement();
         KeyData key = ApacheCommonsHashCodeKey.of(keyData);
 
-        blackhole.consume(data.elementMap.get(key));
+        blackhole.consume(data.keyElementMap.get(key));
     }
 
 }
