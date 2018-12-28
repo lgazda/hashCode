@@ -1,8 +1,8 @@
-package key;
+package hashcode.key;
 
 import java.util.Date;
 
-public class IdeaDefaultHashCodeKey extends AttributeBasedKey {
+public class IdeaDefaultHashCodeKey extends KeyData {
 
     public IdeaDefaultHashCodeKey(int id1, int id2, Date id3) {
         super(id1, id2, id3);
@@ -13,7 +13,7 @@ public class IdeaDefaultHashCodeKey extends AttributeBasedKey {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        AttributeBasedKey that = (AttributeBasedKey) o;
+        KeyData that = (KeyData) o;
 
         if (id1 != that.id1) return false;
         if (id2 != that.id2) return false;

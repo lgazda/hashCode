@@ -1,7 +1,9 @@
-import key.ApacheCommonsHashCodeKey;
-import key.JavaObjectsHashCodeKey;
-import key.IdeaDefaultHashCodeKey;
-import key.StringKey;
+package hashcode.distribution;
+
+import hashcode.key.ApacheCommonsHashCodeKey;
+import hashcode.key.JavaObjectsHashCodeKey;
+import hashcode.key.IdeaDefaultHashCodeKey;
+import hashcode.key.StringKey;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -9,14 +11,11 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.time.LocalDate;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
+import static hashcode.key.KeyData.parseDate;
 import static java.lang.System.lineSeparator;
 
 public class HashCodeGeneration {
@@ -69,13 +68,5 @@ public class HashCodeGeneration {
         }
     }
 
-    private static Date parseDate(String s) {
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
-        try {
-            return simpleDateFormat.parse(s);
-        } catch (ParseException e) {
-            throw new IllegalStateException("Unable to parse date from: " + s);
-        }
-    }
 }
