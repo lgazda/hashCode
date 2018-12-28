@@ -27,4 +27,7 @@ public class StringKey {
         return (id1 + "_" + id2 + "_" + id3.getTime());
     }
 
+    public static String stringKey(KeyData key) {
+        return (key.getId1() + "_" + key.getId2() + "_" + key.getId3().getTime());
+    }
 }

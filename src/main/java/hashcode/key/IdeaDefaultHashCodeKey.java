@@ -26,4 +26,9 @@ public class IdeaDefaultHashCodeKey extends KeyData {
         result = 31 * result + id2;
         result = 31 * result + id3.hashCode();
         return result;
-    }}
+    }
+
+    public static IdeaDefaultHashCodeKey of(KeyData key) {
+        return new IdeaDefaultHashCodeKey(key.id1, key.id2, key.id3);
+    }
+}
