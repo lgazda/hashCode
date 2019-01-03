@@ -3,7 +3,7 @@ package hashcode.distribution;
 import com.google.common.collect.ImmutableMap;
 import hashcode.key.ApacheCommonsHashCodeKey;
 import hashcode.key.FileBasedKeyDataSupplier;
-import hashcode.key.GenerateKeyDataSupplier;
+import hashcode.key.GeneratedKeyDataSupplier;
 import hashcode.key.IdeaDefaultHashCodeKey;
 import hashcode.key.JavaObjectsHashCodeKey;
 import hashcode.key.KeyData;
@@ -16,8 +16,10 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -27,6 +29,9 @@ import static java.lang.System.lineSeparator;
 import static org.apache.commons.lang3.ObjectUtils.defaultIfNull;
 
 public class HashCodeDistribution {
+
+    private static final int ENTRY_COUNT = 25_000_000;
+    private static final int HASH_CODE_STATS_DISTRIBUTION_INTERVAL = 10_000_000;
 
     private static Logger LOG = LogManager.getRootLogger();
 
@@ -38,27 +43,29 @@ public class HashCodeDistribution {
             .build();
 
     public static void main(String[] args) throws Exception {
-        int hashCodeStatsDistributionInterval = 10_000_000;
 
-        Stats stats = new Stats(hashCodeStatsDistributionInterval);
+        Stats stats = new Stats(HASH_CODE_STATS_DISTRIBUTION_INTERVAL);
 
         try(KeyDataSupplier fileSupplier = new FileBasedKeyDataSupplier("W:/hashcodes/inventory.ts.csv");
-            KeyDataSupplier generatedDataSupplier = new GenerateKeyDataSupplier(1_000_000)) {
-            collectStats(stats, hashCodeStatsDistributionInterval, generatedDataSupplier);
+            KeyDataSupplier generatedDataSupplier = new GeneratedKeyDataSupplier(ENTRY_COUNT)) {
+            collectStats(stats, generatedDataSupplier);
         }
 
         writeStats("W:/hashcodes/hashcode.distribution.generated.csv",
                 stats,
-                hashCodeStatsDistributionInterval);
+                HASH_CODE_STATS_DISTRIBUTION_INTERVAL);
     }
 
     public static class Stats {
         private final Map<String, ConcurrentSkipListMap<Long, Integer>> stats;
+        private final Map<String, Set<Integer>> hashCodes;
         private final int hashCodeStatsDistributionInterval;
 
         public Stats(int hashCodeStatsDistributionInterval) {
             this.hashCodeStatsDistributionInterval = hashCodeStatsDistributionInterval;
-            stats = createStats(this.hashCodeStatsDistributionInterval);
+            this.stats = createStats(hashCodeStatsDistributionInterval);
+            this.hashCodes = HASH_FUNCTION_MAP.keySet().stream()
+                    .collect(Collectors.toMap(Function.identity(), name -> new HashSet<>(ENTRY_COUNT)));
         }
 
         private static Map<String, ConcurrentSkipListMap<Long, Integer>> createStats(int interval) {
@@ -74,6 +81,7 @@ public class HashCodeDistribution {
         public void collectHashCodeStat(String hashName, int hashCode) {
             long statsBucket = getIntervalStartIndex(hashCode, hashCodeStatsDistributionInterval);
             stats.get(hashName).compute(statsBucket, (k, v) -> defaultIfNull(v, 0) + 1);
+            hashCodes.get(hashName).add(hashCode);
         }
 
         public List<String> getHashNames() {
@@ -87,9 +95,21 @@ public class HashCodeDistribution {
             return stats.values().stream().findFirst().map(ConcurrentSkipListMap::keySet).orElse(null);
         }
 
-        public int getStats(String hashName, Long currentInterval) {
+        public int getStatsForInterval(String hashName, Long currentInterval) {
             ConcurrentSkipListMap<Long, Integer> stat = stats.get(hashName);
             return stat.get(currentInterval);
+        }
+
+        public int getUniqueHashCodesCount(String hashName) {
+            return hashCodes.get(hashName).size();
+        }
+
+        public int getCollectedHashCodesCount(String hashName) {
+            return stats.get(hashName)
+                    .values()
+                    .stream()
+                    .mapToInt(i -> i)
+                    .sum();
         }
     }
 
@@ -110,10 +130,10 @@ public class HashCodeDistribution {
         LOG.info("Stats intervals initialized");
     }
 
-    private static void collectStats(Stats stats, int distributionInterval, KeyDataSupplier pairStream) {
+    private static void collectStats(Stats stats, KeyDataSupplier dataSupplier) {
         final AtomicInteger processed = new AtomicInteger(0);
 
-        pairStream.get().forEach(data -> {
+        dataSupplier.get().forEach(data -> {
             HASH_FUNCTION_MAP.forEach((hashName, hashFunction) -> {
                 Integer hashCode = hashFunction.apply(data.getValue());
                 stats.collectHashCodeStat(hashName, hashCode);
@@ -141,7 +161,7 @@ public class HashCodeDistribution {
                 StringBuilder line = new StringBuilder().append("[").append(start).append("_").append(end).append("]");
 
                 for (String hashName : stats.getHashNames()) {
-                    Integer intervalStats = stats.getStats(hashName, currentInterval);
+                    Integer intervalStats = stats.getStatsForInterval(hashName, currentInterval);
                     line.append(',').append(intervalStats);
                 }
 
@@ -149,6 +169,11 @@ public class HashCodeDistribution {
                 LOG.info(line.toString());
             }
         }
+
+        stats.getHashNames()
+                .stream()
+                .map(name -> name + " total: " +  stats.getCollectedHashCodesCount(name) + " unique: " + stats.getUniqueHashCodesCount(name))
+                .forEach(System.out::println);
     }
 
     private static long getIntervalStartIndex(long i, int interval) {

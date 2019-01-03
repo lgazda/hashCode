@@ -1,7 +1,7 @@
 package hashcode.benchmark;
 
 import hashcode.key.ApacheCommonsHashCodeKey;
-import hashcode.key.GenerateKeyDataSupplier;
+import hashcode.key.GeneratedKeyDataSupplier;
 import hashcode.key.JavaObjectsHashCodeKey;
 import hashcode.key.KeyData;
 import hashcode.key.StringKey;
@@ -38,7 +38,7 @@ public class HashGenerationBenchmark {
 
         @Setup(Level.Trial)
         public void generateData() {
-            new GenerateKeyDataSupplier(ENTRY_COUNT)
+            new GeneratedKeyDataSupplier(ENTRY_COUNT)
                 .get()
                 .forEach(keyData -> {
                     keyDataList.add(keyData.getKey(), keyData.getValue());
