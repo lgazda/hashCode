@@ -20,6 +20,7 @@ import org.openjdk.jmh.infra.Blackhole;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,9 +30,9 @@ public class HashGenerationBenchmark {
 
     @State(value = Scope.Benchmark)
     public static class BenchmarkDate {
-        private static final int ENTRY_COUNT = 37_000_000;
+        private static final int ENTRY_COUNT = 12_000_000;
 
-        List<KeyData> keyDataList = new ArrayList<>(ENTRY_COUNT);
+        List<KeyData> keyDataList = new LinkedList<>();
         Map<Object, Integer> keyElementMap = new ConcurrentHashMap<>(ENTRY_COUNT);
 
         private Iterator<KeyData> dataIterator;
@@ -42,9 +43,9 @@ public class HashGenerationBenchmark {
                 .get()
                 .forEach(keyData -> {
                     keyDataList.add(keyData.getKey(), keyData.getValue());
-                    //keyElementMap.put(ApacheCommonsHashCodeKey.of(keyData.getValue()), keyData.getKey());
+                    keyElementMap.put(ApacheCommonsHashCodeKey.of(keyData.getValue()), keyData.getKey());
                     //keyElementMap.put(JavaObjectsHashCodeKey.of(keyData.getValue()), keyData.getKey());
-                    keyElementMap.put(StringKey.stringKey(keyData.getValue()), keyData.getKey());
+                    //keyElementMap.put(StringKey.stringKey(keyData.getValue()), keyData.getKey());
                 });
         }
 
@@ -66,7 +67,7 @@ public class HashGenerationBenchmark {
     @Warmup(iterations = 5, time = 5)
     @BenchmarkMode(Mode.Throughput) @OutputTimeUnit(TimeUnit.SECONDS)
     @Measurement(iterations = 5)
-    @Benchmark
+    //@Benchmark
     public void stringHashGeneration(BenchmarkDate data, Blackhole blackhole) {
         KeyData keyData = data.nextDataElement();
         String key = StringKey.stringKey(keyData);
@@ -79,7 +80,7 @@ public class HashGenerationBenchmark {
     @Warmup(iterations = 5, time = 5)
     @BenchmarkMode({Mode.Throughput}) @OutputTimeUnit(TimeUnit.SECONDS)
     @Measurement(iterations = 5)
-    @Benchmark
+    //@Benchmark
     public void stringMapAccess(BenchmarkDate data, Blackhole blackhole) {
         KeyData keyData = data.nextDataElement();
         String key = StringKey.stringKey(keyData);
@@ -120,7 +121,7 @@ public class HashGenerationBenchmark {
     @Warmup(iterations = 5, time = 5)
     @BenchmarkMode(Mode.Throughput) @OutputTimeUnit(TimeUnit.SECONDS)
     @Measurement(iterations = 5)
-    //@Benchmark
+    @Benchmark
     public void apacheHashMapAccess(BenchmarkDate data, Blackhole blackhole) {
         KeyData keyData = data.nextDataElement();
         KeyData key = ApacheCommonsHashCodeKey.of(keyData);
