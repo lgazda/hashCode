@@ -46,8 +46,7 @@ public class JavaHashBenchmark {
     @Measurement(iterations = 5)
     @Benchmark
     public void javaHashGeneration(BenchmarkData data, Blackhole blackhole) {
-        KeyData keyData = data.nextDataElement();
-        KeyData key = data.createBenchmarkKey(keyData);
+        Object key = data.getNextKey();
 
         blackhole.consume(key.hashCode());
         blackhole.consume(key);
@@ -58,8 +57,7 @@ public class JavaHashBenchmark {
     @Measurement(iterations = 5)
     @Benchmark
     public void javaHashMapAccess(BenchmarkData data, Blackhole blackhole) {
-        KeyData keyData = data.nextDataElement();
-        KeyData key = data.createBenchmarkKey(keyData);
+        Object key = data.getNextKey();
 
         blackhole.consume(data.keyElementMap.get(key));
     }
